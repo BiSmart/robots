@@ -8,31 +8,35 @@ import java.awt.Point;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Point2D;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import javax.swing.JPanel;
 
+import logic.Logic;
+
+
 public class GameVisualizer extends JPanel
 {
     private final Timer m_timer = initTimer();
-    
+
     private static Timer initTimer() 
     {
         Timer timer = new Timer("events generator", true);
         return timer;
     }
-    
+
     private volatile double m_robotPositionX = 100;
-    private volatile double m_robotPositionY = 100; 
-    private volatile double m_robotDirection = 0; 
+    private volatile double m_robotPositionY = 100;
+    private volatile double m_robotDirection = 0;
 
     private volatile int m_targetPositionX = 150;
     private volatile int m_targetPositionY = 100;
-    
-    private static final double maxVelocity = 0.1; 
-    private static final double maxAngularVelocity = 0.001; 
-    
+
+    private static final double maxVelocity = 0.1;
+    private static final double maxAngularVelocity = 0.001;
+
     public GameVisualizer() 
     {
         m_timer.schedule(new TimerTask()
@@ -68,50 +72,22 @@ public class GameVisualizer extends JPanel
         m_targetPositionX = p.x;
         m_targetPositionY = p.y;
     }
-    
+
     protected void onRedrawEvent()
     {
         EventQueue.invokeLater(this::repaint);
     }
 
-    private static double distance(double x1, double y1, double x2, double y2)
-    {
-        double diffX = x1 - x2;
-        double diffY = y1 - y2;
-        return Math.sqrt(diffX * diffX + diffY * diffY);
-    }
-    
-    private static double angleTo(double fromX, double fromY, double toX, double toY)
-    {
-        double diffX = toX - fromX;
-        double diffY = toY - fromY;
-        
-        return asNormalizedRadians(Math.atan2(diffY, diffX));
-    }
-    
     protected void onModelUpdateEvent()
     {
-        double distance = distance(m_targetPositionX, m_targetPositionY, 
-            m_robotPositionX, m_robotPositionY);
-        if (distance < 0.5)
-        {
-            return;
-        }
-        double velocity = maxVelocity;
-        double angleToTarget = angleTo(m_robotPositionX, m_robotPositionY, m_targetPositionX, m_targetPositionY);
-        double angularVelocity = 0;
-        if (angleToTarget > m_robotDirection)
-        {
-            angularVelocity = maxAngularVelocity;
-        }
-        if (angleToTarget < m_robotDirection)
-        {
-            angularVelocity = -maxAngularVelocity;
-        }
-        
-        moveRobot(velocity, angularVelocity, 10);
+        Point2D.Double pos = new Point2D.Double(m_robotPositionX, m_robotPositionY);
+        Point2D.Double target = new Point2D.Double(m_targetPositionX, m_targetPositionY);
+
+        Logic.updateLogic(maxVelocity, maxAngularVelocity);
+        Logic.update(pos, target, m_robotDirection);
+		moveRobot(Logic.getVelocity(), Logic.angularVelocity(), Logic.getDuration());
     }
-    
+
     private static double applyLimits(double value, double min, double max)
     {
         if (value < min)
